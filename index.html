@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- You can add your styles and scripts here -->
     <link rel="stylesheet" type="text/css" media="screen" href="styles/provided.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="styles/additional.css" />
     <script type="module" src="src/helpers.js"></script>
     <script type="module" src="src/api.js"></script>
 </head>
@@ -21,6 +22,42 @@
     </header>
     <main role="main">
         <!-- app goes here --> 
+        <div id="modal">
+            <!-- Modal content -->
+            <div id="modal-content">
+                <span id="close">&times;</span>
+                <p id ="modal-text"> </p>
+            </div>
+        </div>
+
+        <div id="login">
+            <label for="username"> Username:</label><br>
+            <input type="text" id="username" value= "Sophia"><br>
+            <label for="password">Password:</label><br>
+            <input type="password" id="password" value = "cluttered"><br>
+            <label for="password_conf">Confirm Password:</label><br>
+            <input type="password" id="password_conf" value = "cluttered"><br>
+
+            <div id="registerDetails">
+                <label for="email"> Email Address:</label><br>
+                <input type="text" id="email"><br>
+                <label for="name"> Name:</label><br>
+                <input type="text" id="name"><br>
+            </div>
+
+            <br>
+            <button id = "loginButton"> Submit </button>
+            
+            <div id="register">
+                <div>Not yet registered?</div>
+                <button id = "registerButton">Register</button>
+            </div>
+        </div>
+        
+        <div id = "loginPage">
+            <div id = "welcomeText">Welcome to the Dashboard!</div>
+            <div id ="feed"></div>
+        </div>
     </main>
     <footer>
         <p>&copy; Quickpic</p>
