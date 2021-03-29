@@ -82,6 +82,7 @@ function login(username, password) {
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('loginPage').style.display = 'block';
                 document.getElementById('registerDetails').style.display = 'none';
+                document.getElementById('currentUser').innerText = username;
                 showFeed(user_token);
             })
         }
@@ -131,6 +132,42 @@ function register(username, password, email, name) {
 }
 
 function showFeed(token) {
+    // feed wipe
+    const feed = document.getElementById('feed')
+    feed.innerText = ''
+
+    // get user details
+    fetch('http://localhost:5000/user/', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + token 
+        },
+    })
+    .then (response => {
+        if (response.status === 200) {
+            response.json().then(data => {
+                feed.appendChild(UserDetailsList(data))
+                // search a profile button
+                document.getElementById('userSearchButton').addEventListener('click', () => {
+                    const username = document.getElementById('userSearch')
+                    if (username.value != '') viewProfile(token, username.value)
+                    username.value = ''
+                })
+            })
+        }
+        else {
+            userErrors(response.status)
+        }
+    })
+    .catch(error => {
+        console.log('Error: ', error)
+    })
+
+    
+
+    // get posts
     fetch('http://localhost:5000/user/feed/?p=0&n=10', {
         method: 'GET',
         headers: {
@@ -149,6 +186,7 @@ function showFeed(token) {
         }
         else if (response.status === 200) { 
             response.json().then(result => {
+
                 const posts = result['posts'];
                 posts.forEach(post => {
                     showPosts(post, token)
@@ -161,18 +199,6 @@ function showFeed(token) {
 }   
 
 function viewProfile(userToken, profileUsername) {
-    const feed = document.getElementById('feed')
-    feed.innerText = ''
-
-    // button to return to main profile
-    const backButton = document.createElement('button')
-    backButton.innerText = "Back to Your Profile"
-    backButton.addEventListener('click', () => {
-        feed.innerText = ''
-        showFeed(userToken)
-    })
-    feed.appendChild(backButton)
-
     fetch(`http://localhost:5000/user?username=${profileUsername}`, {   
         method: 'GET',
         headers: {
@@ -183,11 +209,121 @@ function viewProfile(userToken, profileUsername) {
     }).then(response => {
         if (response.status === 200) {
             response.json().then(data => {
+                // reset feed
+                const feed = document.getElementById('feed')
+                feed.innerText = ''
+
+                // button to return to main profile
+                const backButton = document.createElement('button')
+                backButton.innerText = "Back to Your Profile"
+                backButton.addEventListener('click', () => {
+                    feed.innerText = ''
+                    showFeed(userToken)
+                })
+                feed.appendChild(backButton)
+
                 // show current profiles details
                 feed.appendChild(UserDetailsList(data))
 
+                // follower button
+                const followListButton = document.createElement('button')
+                followListButton.innerText = "Show Following"
+                followListButton.style.display = 'block'
+                
+                followListButton.addEventListener ('click', () => {
+                    // following list
+                    document.getElementById('modal').style.display = 'block'
+                    const followingList = LikesOrCommentsList("Following: ");            
+                    
+                    // get the array
+                    const followingIDs = data.following 
+
+                    followingIDs.forEach(userID => {
+                        fetch(`http://localhost:5000/user?id=${userID}`, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Token ' + userToken 
+                            },
+                        })
+                        .then(response => {
+                            if (response.status === 200) {
+                                response.json().then(data => {
+                                    const following = document.createElement('li')
+                                    following.innerText = data.name
+                                    followingList.appendChild(following)
+                                })
+                            }
+                        })
+                        .catch(error => {
+                            console.log('Error: ', error);
+                        })
+                    })
+                })
+                feed.appendChild(followListButton)
+
+
+                // follow the user button
+                const currentUser = document.getElementById('currentUser').innerText
+                if (currentUser != profileUsername) {
+                    const followButton = document.createElement('button')     
+                    const profileID = data.id
+
+                    // find out if user is following or not
+                    fetch(`http://localhost:5000/user/`, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Token ' + userToken 
+                        },
+                    })
+                    .then(response => {
+                        if (response.status === 200) {
+                            response.json().then(data => {
+                                const user_follows = data.following
+                                // logged in user follows profile page
+                                if (user_follows.includes(profileID)) {
+                                    followButton.innerText = 'Unfollow'
+                                    FollowOrUnfollow(userToken,'unfollow', profileUsername)
+                                }
+                                // logged in user doesn't follow profile page
+                                else {
+                                    followButton.innerText = 'Follow'
+                                    FollowOrUnfollow(userToken,'follow', profileUsername)
+                                }
+                            })
+                        }
+                    })
+                    .catch(error => {
+                        console.log('Error: ', error);
+                    })
+                    feed.appendChild(followButton)
+                }
+
+                function FollowOrUnfollow (token, request, username) {
+                    console.log(token, request, username)
+                    fetch(`http://localhost:5000/user/${request}?username=${username}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Token ' + token 
+                        },
+                    })
+                    .then(response => {
+                        if (status === 200) console.log('success')
+                        else userErrors(response.status)
+                    })
+                    .catch(error => {
+                        console.log('Error: ', error);
+                    })
+                }
+
                 // show current profiles posts
                 const posts = data['posts']
+                console.log(posts)
                 posts.forEach(postID => {
                     fetch(`http://localhost:5000/post?id=${postID}`, {
                         method: 'GET',
@@ -383,6 +519,8 @@ function showPosts(post, token) {
                 console.log('Error: ', error);
             })
         })
+        
+        
     });
     const numLikes = post.meta.likes.length;
     if (numLikes === 1) {
@@ -431,6 +569,7 @@ function showPosts(post, token) {
         response.json().then(data => {
             const listOflikes = post.meta.likes
             const userID = data.id 
+            // whether or not the current user is is in the list of likes
             if (!listOflikes.includes(userID)) {
                 likePostButton.innerText = "Like This Post"
             }
@@ -458,4 +597,69 @@ function showPosts(post, token) {
     // add to feed       
     const feed = document.getElementById('feed');
     feed.appendChild(feedPost);
+}
+
+/*
+function currentUserDetails (token) {
+    fetch(`http://localhost:5000/user/`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + token
+        },
+    }).then(response => {
+        if (response.status === 200) {
+            response.json().then(data => {
+                return data
+            })
+        }
+    })
+}
+*/
+/*
+
+function namesFromIDs(token, Listhead, data) {
+    document.getElementById('modal').style.display = 'block'
+        const list = LikesOrCommentsList(`${Listhead}:`);
+
+        // create list of likes
+        data.forEach(userID => {
+            fetch(`http://localhost:5000/user?id=${userID}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Token ' + token 
+                },
+            }).then(response => {
+                if (response.status === 200) {
+                        response.json().then(data => {
+                        const item = document.createElement('li');
+                        item.innerText = data.name;
+                        list.appendChild(item);
+                    })
+                }
+            }).catch(error => {
+                console.log('Error: ', error);
+            })
+        })
+}
+*/
+function checkUserHosting(token) {
+    return fetch(`http://localhost:5000/user/`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + token 
+        }
+        }).then((response) => { 
+            return response.json().then((data) => {
+                console.log(data);
+                return data;
+            }).catch((err) => {
+                console.log(err);
+            }) 
+        });
 }
