@@ -26,17 +26,19 @@
             <!-- Modal content -->
             <div id="modal-content">
                 <span id="close">&times;</span>
-                <p id ="modal-text"> </p>
+                <div id ="modal-text"> </div>
             </div>
         </div>
 
         <div id="login">
-            <label for="username"> Username:</label><br>
-            <input type="text" id="username" value= "Sophia"><br>
-            <label for="password">Password:</label><br>
-            <input type="password" id="password" value = "cluttered"><br>
-            <label for="password_conf">Confirm Password:</label><br>
-            <input type="password" id="password_conf" value = "cluttered"><br>
+            <div id="loginDetails">
+                <label for="username"> Username:</label><br>
+                <input type="text" id="username" value= "Sophia"><br>
+                <label for="password">Password:</label><br>
+                <input type="password" id="password" value = "cluttered"><br>
+                <label for="password_conf">Confirm Password:</label><br>
+                <input type="password" id="password_conf" value = "cluttered"><br>
+            </div>
 
             <div id="registerDetails">
                 <label for="email"> Email Address:</label><br>
@@ -59,7 +61,7 @@
                 <span>Welcome</span>
                 <span id = currentUser></span>
             </div>
-            <input type="text" id="userSearch" placeholder="Search for a Username" value="Andrew"> 
+            <input type="text" id="userSearch" placeholder="Search for a Username"> 
             <button id="userSearchButton"> Search</button>
             <div id ="feed"></div>
         </div>
