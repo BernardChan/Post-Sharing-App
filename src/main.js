@@ -9,7 +9,8 @@ import { fileToDataUrl } from './helpers.js';
 // This url may need to change depending on what port your backend is running
 // on.
 const api = new API('http://localhost:5000');
-
+// global variable for feed position
+var currPost, postsLoaded
 
 // Example usage of makeAPIRequest method.
 
@@ -24,7 +25,6 @@ document.getElementById('loginButton').addEventListener('click', () => {
     const email = document.getElementById('email').value;
     const name = document.getElementById('name').value;
     const registerDetails = document.getElementById('registerDetails');
-
 
     if (password1 != password2) {
         document.getElementById('modal').style.display = 'block'
@@ -139,6 +139,15 @@ function showFeed(token) {
     // create post button
     feed.appendChild(createPost(token))
 
+    // view your profile
+    const viewOwnProfile = document.createElement('button')
+    viewOwnProfile.style.display = 'block'
+    viewOwnProfile.innerText = "View your Profile"
+    feed.appendChild(viewOwnProfile)
+    viewOwnProfile.addEventListener('click', () => {
+        viewProfile(token, document.getElementById('currentUser').innerText)
+    })
+
     // update user details
     const updateButton = document.createElement('button')
     updateButton.innerText = "Update Profile"
@@ -150,7 +159,6 @@ function showFeed(token) {
         document.getElementById('registerDetails').style.display = 'block';
         document.getElementById('loginButton').style.display = 'none';
         document.getElementById('register').style.display = 'none';
-        //document.getElementById('username').style.display = 'none';
 
         // update button
         const updateProfile = document.createElement('button')
@@ -167,6 +175,7 @@ function showFeed(token) {
             const popup = document.getElementById('modal');
             const popupText = document.getElementById('modal-text');
 
+            // check if passwords match
             if (password != password_conf) {
                 popup.style.display = 'block'
                 popupText.innerText = "Passwords do not match"
@@ -208,8 +217,7 @@ function showFeed(token) {
             }
         })
 
-
-        // return button, reverses the page display
+        // return button, reverses the page displays
         const backButton = document.createElement('button')
         backButton.innerText = "Back to Your Profile"
         document.getElementById('login').appendChild(backButton)
@@ -219,14 +227,12 @@ function showFeed(token) {
             document.getElementById('registerDetails').style.display = 'none';
             document.getElementById('loginButton').style.display = 'block';
             document.getElementById('register').style.display = 'block';
-            //document.getElementById('username').style.display = 'block';
+            // remove additional buttons
             updateProfile.remove()
             backButton.remove()
-
         })
     })
 
-    
     // get user details
     fetch('http://localhost:5000/user/', {
         method: 'GET',
@@ -264,38 +270,57 @@ function showFeed(token) {
         console.log('Error: ', error)
     })
     
+    // infinite scroll implementation
 
-    // get posts
-    fetch('http://localhost:5000/user/feed/?p=0&n=10', {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': 'Token ' + token 
-        },
-    })
-    .then(response => {
-        const popup = document.getElementById('modal');
-        const popupText = document.getElementById('modal-text');
+    // global variable assignment for how which posts to load
+    currPost = 0, postsLoaded = 5
+    // initial load
+    printFeed(token, currPost, postsLoaded)
 
-        if (response.status === 403) {
-            popup.style.display = 'block'
-            popupText.firstChild.nodeValue = "Invalid Auth Token"
+    const addScroll = () => {
+        const {scrollTop, scrollHeight, clientHeight} = document.documentElement;
+        // when scroll reaches bottom of page, load new posts
+        if (scrollTop + clientHeight >= scrollHeight - 1) {
+            currPost = currPost + postsLoaded
+            printFeed(token, currPost, postsLoaded)
         }
-        else if (response.status === 200) { 
-            response.json().then(result => {
-
-                const posts = result['posts'];
-                posts.forEach(post => {
-                    showPosts(post, token)
-                })
-            })
-        }
-    }).catch(error => {
-        console.log('Error: ', error);
-    });
+    }
+    window.addEventListener('scroll', addScroll)
 }   
 
+// print a user's feed
+function printFeed (token, currPost, postsLoaded) {
+    fetch(`http://localhost:5000/user/feed?p=${currPost}&n=${postsLoaded}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Token ' + token 
+                },
+            })
+            .then(response => {
+                const popup = document.getElementById('modal');
+                const popupText = document.getElementById('modal-text');
+        
+                if (response.status === 403) {
+                    popup.style.display = 'block'
+                    popupText.firstChild.nodeValue = "Invalid Auth Token"
+                }
+                else if (response.status === 200) { 
+                    response.json().then(result => {
+        
+                        const posts = result['posts'];
+                        posts.forEach(post => {
+                            showPosts(post, token)
+                        })
+                    })
+                }
+            }).catch(error => {
+                console.log('Error: ', error);
+            });
+}
+
+// view another profile
 function viewProfile(userToken, profileUsername) {
     fetch(`http://localhost:5000/user?username=${profileUsername}`, {   
         method: 'GET',
@@ -335,7 +360,6 @@ function viewProfile(userToken, profileUsername) {
                     
                     // get the array
                     const followingIDs = data.following 
-
                     followingIDs.forEach(userID => {
                         fetch(`http://localhost:5000/user?id=${userID}`, {
                             method: 'GET',
@@ -360,7 +384,6 @@ function viewProfile(userToken, profileUsername) {
                     })
                 })
                 feed.appendChild(followListButton)
-
 
                 // follow the user button
                 const currentUser = document.getElementById('currentUser').innerText
@@ -404,28 +427,8 @@ function viewProfile(userToken, profileUsername) {
                     feed.appendChild(followButton)
                 }
 
-                function FollowOrUnfollow (token, request, username) {
-                    console.log(token, request, username)
-                    fetch(`http://localhost:5000/user/${request}?username=${username}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Token ' + token 
-                        },
-                    })
-                    .then(response => {
-                        if (status === 200) console.log('success')
-                        else userErrors(response.status)
-                    })
-                    .catch(error => {
-                        console.log('Error: ', error);
-                    })
-                }
-
                 // show current profiles posts
                 const posts = data['posts']
-                console.log(posts)
                 posts.forEach(postID => {
                     fetch(`http://localhost:5000/post?id=${postID}`, {
                         method: 'GET',
@@ -457,9 +460,29 @@ function viewProfile(userToken, profileUsername) {
     }).catch(error => {
         console.log('Error: ', error)
     })
-
-
+    // set currPost to largest possible int to prevent eventListener showing feed
+    currPost = 9007199254740991
 }
+
+// depending on if user is following or not, will follow or unfollow
+function FollowOrUnfollow (token, request, username) {
+    fetch(`http://localhost:5000/user/${request}?username=${username}`, {
+        method: 'PUT',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + token 
+        },
+    })
+    .then(response => {
+        if (status != 200) userErrors(response.status)
+    })
+    .catch(error => {
+        console.log('Error: ', error);
+    })
+}
+
+
 
 function UserDetailsList(userData) {
     // usernames profile - list head
@@ -561,7 +584,6 @@ function createPost (token) {
                     else if (response.status === 403) {
                         message.innerText = "Invalid Auth Token"
                     }
-    
                 })
                 .catch(error => {
                     console.log('Error: ', error);
@@ -570,16 +592,17 @@ function createPost (token) {
 
         })
     })
-
     return postButton
 }
 
 
-// helper functions
+// helper functions //
 
+// list popup on modal
 function displayListHead (innerText) {
     const List = document.createElement('ul');
     List.innerText = innerText;
+    document.getElementById('modal-text').innerText = ""
     document.getElementById('modal-text').appendChild(List);
     return List;
 }
@@ -637,6 +660,7 @@ function likeOrUnlike (request, id, token) {
     })
 }
 
+// show posts used for feed and profile posts
 function showPosts(post, token) {
     const feedPost = document.createElement('div');
     feedPost.className = 'postBox';
@@ -663,6 +687,7 @@ function showPosts(post, token) {
 
     feedPost.appendChild(authorDiv);
 
+    // allow for update and delete if on current users profile
     const currentUser = document.getElementById('currentUser')
     if (currentUser.innerText === post.meta.author) {
         // edit post
@@ -771,6 +796,7 @@ function showPosts(post, token) {
     likesButton.addEventListener('click', () => {   
         // Likes list
         document.getElementById('modal').style.display = 'block'
+        document.getElementById('modal-text').style.display = 'block'
         const likeList = displayListHead ("Likes: ");
 
         // create list of likes
@@ -786,9 +812,19 @@ function showPosts(post, token) {
             }).then(response => {
                 if (response.status === 200) {
                         response.json().then(data => {
+                        const like = document.createElement('button')
+                        like.style.display = 'block'
+                        like.innerText = `${data.username}`
+                        like.addEventListener('click', () => {
+                            viewProfile(token, data.username)
+                            document.getElementById('modal').style.display = 'none'
+                        })
+                        likeList.appendChild(like)
+                        /*
                         const like = document.createElement('li');
                         like.innerText = data.name;
                         likeList.appendChild(like);
+                        */
                     })
                 }
             }).catch(error => {
@@ -816,9 +852,24 @@ function showPosts(post, token) {
         // create list of comments
         const comments = post['comments'];
         comments.forEach(comments => {
+            const fullComment = document.createElement('div')
+            const commentText = document.createElement('span')
+            commentText.innerText = `"${comments.comment}" by `
+            fullComment.appendChild(commentText)
+
+            const comment = document.createElement('button')
+            comment.innerText = comments.author
+            comment.addEventListener('click', () => {
+                viewProfile(token, comments.author)
+                document.getElementById('modal').style.display = 'none'
+            })
+            fullComment.appendChild(comment)
+
+            commentList.appendChild(fullComment)
+            /*
             const comment = document.createElement('li');
             comment.innerText = `"${comments.comment}" - ${comments.author}`
-            commentList.appendChild(comment);
+            commentList.appendChild(comment);*/
         })
     });
     const numComments = post.comments.length;
