@@ -50,7 +50,7 @@ document.getElementById('close').addEventListener('click', () => {
     document.getElementById('modal-text').textContent = ''
 })
 
-// main functions
+/////// main functions ///////
 function login(username, password) {
     const loginBody = {
         "username": username,
@@ -214,6 +214,9 @@ function showFeed(token) {
                         popupText.innerText = "Invalid Authorization Token"
                     }
                 })
+                .catch(error => {
+                    console.log('Error: ', error)
+                })
             }
         })
 
@@ -291,33 +294,33 @@ function showFeed(token) {
 // print a user's feed
 function printFeed (token, currPost, postsLoaded) {
     fetch(`http://localhost:5000/user/feed?p=${currPost}&n=${postsLoaded}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Token ' + token 
-                },
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + token 
+        },
+    })
+    .then(response => {
+        const popup = document.getElementById('modal');
+        const popupText = document.getElementById('modal-text');
+
+        if (response.status === 403) {
+            popup.style.display = 'block'
+            popupText.firstChild.nodeValue = "Invalid Auth Token"
+        }
+        else if (response.status === 200) { 
+            response.json().then(result => {
+
+                const posts = result['posts'];
+                posts.forEach(post => {
+                    showPosts(post, token)
+                })
             })
-            .then(response => {
-                const popup = document.getElementById('modal');
-                const popupText = document.getElementById('modal-text');
-        
-                if (response.status === 403) {
-                    popup.style.display = 'block'
-                    popupText.firstChild.nodeValue = "Invalid Auth Token"
-                }
-                else if (response.status === 200) { 
-                    response.json().then(result => {
-        
-                        const posts = result['posts'];
-                        posts.forEach(post => {
-                            showPosts(post, token)
-                        })
-                    })
-                }
-            }).catch(error => {
-                console.log('Error: ', error);
-            });
+        }
+    }).catch(error => {
+        console.log('Error: ', error);
+    });
 }
 
 // view another profile
@@ -596,7 +599,7 @@ function createPost (token) {
 }
 
 
-// helper functions //
+/////// helper functions ///////
 
 // list popup on modal
 function displayListHead (innerText) {
@@ -820,20 +823,15 @@ function showPosts(post, token) {
                             document.getElementById('modal').style.display = 'none'
                         })
                         likeList.appendChild(like)
-                        /*
-                        const like = document.createElement('li');
-                        like.innerText = data.name;
-                        likeList.appendChild(like);
-                        */
                     })
                 }
             }).catch(error => {
                 console.log('Error: ', error);
             })
         })
-        
-        
     });
+
+    // condition for like button
     const numLikes = post.meta.likes.length;
     if (numLikes === 1) {
         likesButton.innerText = `${numLikes} Like`;
@@ -866,10 +864,6 @@ function showPosts(post, token) {
             fullComment.appendChild(comment)
 
             commentList.appendChild(fullComment)
-            /*
-            const comment = document.createElement('li');
-            comment.innerText = `"${comments.comment}" - ${comments.author}`
-            commentList.appendChild(comment);*/
         })
     });
     const numComments = post.comments.length;
@@ -956,74 +950,7 @@ function showPosts(post, token) {
         })
     })
     
-
     // add to feed       
     const feed = document.getElementById('feed');
     feed.appendChild(feedPost);
 }
-
-/*
-function currentUserDetails (token) {
-    fetch(`http://localhost:5000/user/`, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': 'Token ' + token
-        },
-    }).then(response => {
-        if (response.status === 200) {
-            response.json().then(data => {
-                return data
-            })
-        }
-    })
-}
-
-
-
-function namesFromIDs(token, Listhead, data) {
-    document.getElementById('modal').style.display = 'block'
-        const list = displayListHead (`${Listhead}:`);
-
-        // create list of likes
-        data.forEach(userID => {
-            fetch(`http://localhost:5000/user?id=${userID}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Token ' + token 
-                },
-            }).then(response => {
-                if (response.status === 200) {
-                        response.json().then(data => {
-                        const item = document.createElement('li');
-                        item.innerText = data.name;
-                        list.appendChild(item);
-                    })
-                }
-            }).catch(error => {
-                console.log('Error: ', error);
-            })
-        })
-}
-
-
-// get user details
-fetch(`http://localhost:5000/user/`, {
-    method: 'GET',
-    headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': 'Token ' + token 
-    },
-})
-.then(response => {
-    if(response.status === 200) {
-        response.json().then(data => {
-            
-        })
-    }
-})
-*/
