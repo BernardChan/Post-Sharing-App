@@ -5,7 +5,6 @@ import { fileToDataUrl } from './helpers.js';
 // frontend: python3 -m http.server
 // backend: python3 run.py 
 
-
 // This url may need to change depending on what port your backend is running
 // on.
 const api = new API('http://localhost:5000');
@@ -19,6 +18,7 @@ api.makeAPIRequest('dummy/user')
 
 // Login Button
 document.getElementById('loginButton').addEventListener('click', () => {
+    // user details 
     const password1 = document.getElementById('password').value;
     const password2 = document.getElementById('password_conf').value;
     const username = document.getElementById('username').value;
@@ -28,7 +28,7 @@ document.getElementById('loginButton').addEventListener('click', () => {
 
     if (password1 != password2) {
         document.getElementById('modal').style.display = 'block'
-        document.getElementById('modal-text').firstChild.nodeValue = "Passwords do not match!"
+        document.getElementById('modal-text').innerText = "Passwords do not match!"
     }
     else if (registerDetails.style.display === 'block') {
         register(username, password1, email, name);
@@ -49,8 +49,11 @@ document.getElementById('close').addEventListener('click', () => {
     document.getElementById('modal').style.display = 'none'
     document.getElementById('modal-text').textContent = ''
 })
-
+//////////////////////////////
 /////// main functions ///////
+//////////////////////////////
+
+/////// LOGIN ///////
 function login(username, password) {
     const loginBody = {
         "username": username,
@@ -70,14 +73,15 @@ function login(username, password) {
 
         if (response.status === 403) {
             popup.style.display = 'block'
-            popupText.firstChild.nodeValue = "Invalid Username or Password"
+            popupText.innerText = "Invalid Username or Password"
         }
         else if (response.status === 400) {
             popup.style.display = 'block'
-            popupText.firstChild.nodeValue = "Missing Username or Password"
+            popupText.innerText = "Missing Username or Password"
         }
         else if (response.status === 200) { 
             response.json().then(login => {
+                // user's login details
                 const user_token = login.token;
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('loginPage').style.display = 'block';
@@ -91,6 +95,7 @@ function login(username, password) {
     });
 }
 
+/////// REGISTER ///////
 function register(username, password, email, name) {
     const loginBody = {
         "username": username,
@@ -107,22 +112,25 @@ function register(username, password, email, name) {
         body: JSON.stringify(loginBody),
     })
     .then(response => {
+        // pop up for errors
         const popup = document.getElementById('modal');
         const popupText = document.getElementById('modal-text');
 
         if (response.status === 400) {
             popup.style.display = 'block'
-            popupText.firstChild.nodeValue = "Missing Username or Password"
+            popupText.innerText = "Missing Username or Password"
         }
         else if (response.status === 409) {
             popup.style.display = 'block'
-            popupText.firstChild.nodeValue = "Username has been taken"  
+            popupText.innerText = "Username has been taken"  
         }
         else if (response.status === 200) { 
             response.json().then(login => {
+                // user details
                 const user_token = login.token;
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('loginPage').style.display = 'block';
+                document.getElementById('currentUser').innerText = username;
                 showFeed(user_token);
             })
         }
@@ -131,6 +139,7 @@ function register(username, password, email, name) {
     });
 }
 
+/////// SHOW YOUR FEED ///////
 function showFeed(token) {
     // feed wipe
     const feed = document.getElementById('feed')
@@ -154,6 +163,7 @@ function showFeed(token) {
     updateButton.style.display = 'block'
     feed.appendChild(updateButton)
     updateButton.addEventListener('click', () => {
+        // show the user details to update
         document.getElementById('loginPage').style.display = 'none';
         document.getElementById('login').style.display = 'block';
         document.getElementById('registerDetails').style.display = 'block';
@@ -172,6 +182,7 @@ function showFeed(token) {
             const password = document.getElementById('password').value
             const password_conf = document.getElementById('password_conf').value
 
+            // error pop up
             const popup = document.getElementById('modal');
             const popupText = document.getElementById('modal-text');
 
@@ -186,6 +197,7 @@ function showFeed(token) {
                 popupText.innerText = "Password can not be empty"
             }
             else {
+                // updates user details
                 const updateBody = {
                     "email": email,
                     "name": name,
@@ -220,11 +232,12 @@ function showFeed(token) {
             }
         })
 
-        // return button, reverses the page displays
+        // return to your feed button
         const backButton = document.createElement('button')
-        backButton.innerText = "Back to Your Profile"
+        backButton.innerText = "Back to Your Feed"
         document.getElementById('login').appendChild(backButton)
         backButton.addEventListener('click', () => {
+            // changes what is visible in DOM to show feed
             document.getElementById('loginPage').style.display = 'block';
             document.getElementById('login').style.display = 'none';
             document.getElementById('registerDetails').style.display = 'none';
@@ -257,12 +270,6 @@ function showFeed(token) {
                 // update inputs in registerDetails div for update profile purposes
                 document.getElementById('email').value = data.email
                 document.getElementById('name').value = data.name
-
-                /*
-                // list of logged in users details
-                feed.appendChild(UserDetailsList(data))
-                // create a post button
-                */
             })
         }
         else {
@@ -275,7 +282,7 @@ function showFeed(token) {
     
     // infinite scroll implementation
 
-    // global variable assignment for how which posts to load
+    // global variable assignment for how many posts to load
     currPost = 0, postsLoaded = 5
     // initial load
     printFeed(token, currPost, postsLoaded)
@@ -291,7 +298,7 @@ function showFeed(token) {
     window.addEventListener('scroll', addScroll)
 }   
 
-// print a user's feed
+/////// PRINT POSTS TO FEED ///////
 function printFeed (token, currPost, postsLoaded) {
     fetch(`http://localhost:5000/user/feed?p=${currPost}&n=${postsLoaded}`, {
         method: 'GET',
@@ -307,7 +314,7 @@ function printFeed (token, currPost, postsLoaded) {
 
         if (response.status === 403) {
             popup.style.display = 'block'
-            popupText.firstChild.nodeValue = "Invalid Auth Token"
+            popupText.innerText = "Invalid Auth Token"
         }
         else if (response.status === 200) { 
             response.json().then(result => {
@@ -323,7 +330,7 @@ function printFeed (token, currPost, postsLoaded) {
     });
 }
 
-// view another profile
+/////// VIEW ANOTHER PROFILE ///////
 function viewProfile(userToken, profileUsername) {
     fetch(`http://localhost:5000/user?username=${profileUsername}`, {   
         method: 'GET',
@@ -341,7 +348,7 @@ function viewProfile(userToken, profileUsername) {
 
                 // button to return to main profile
                 const backButton = document.createElement('button')
-                backButton.innerText = "Back to Your Profile"
+                backButton.innerText = "Back to Your Feed"
                 backButton.addEventListener('click', () => {
                     feed.innerText = ''
                     showFeed(userToken)
@@ -390,6 +397,7 @@ function viewProfile(userToken, profileUsername) {
 
                 // follow the user button
                 const currentUser = document.getElementById('currentUser').innerText
+                // if you are not viewing your own profile
                 if (currentUser != profileUsername) {
                     const followButton = document.createElement('button')     
                     const profileID = data.id
@@ -465,202 +473,6 @@ function viewProfile(userToken, profileUsername) {
     })
     // set currPost to largest possible int to prevent eventListener showing feed
     currPost = 9007199254740991
-}
-
-// depending on if user is following or not, will follow or unfollow
-function FollowOrUnfollow (token, request, username) {
-    fetch(`http://localhost:5000/user/${request}?username=${username}`, {
-        method: 'PUT',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': 'Token ' + token 
-        },
-    })
-    .then(response => {
-        if (status != 200) userErrors(response.status)
-    })
-    .catch(error => {
-        console.log('Error: ', error);
-    })
-}
-
-
-
-function UserDetailsList(userData) {
-    // usernames profile - list head
-    const listHead = document.createElement('ul')
-    listHead.innerText = `${userData.username}'s Profile Details:`
-
-    // name
-    const name = document.createElement('li')
-    name.innerText = `Name: ${userData.name}`
-    listHead.appendChild(name)
-
-    // id
-    const id = document.createElement('li')
-    id.innerText = `User ID: ${userData.id}`
-    listHead.appendChild(id)
-
-    // email
-    const email = document.createElement('li')
-    email.innerText = `Email: ${userData.email}`
-    listHead.appendChild(email)
-
-    // followers + following count 
-    const FollowersAndFollowing = document.createElement('li')
-    FollowersAndFollowing.innerText = `Followers: ${userData.followed_num}, Following: ${userData.following.length}`
-    listHead.appendChild(FollowersAndFollowing)
-
-    return listHead
-}
-
-function createPost (token) {
-    const postButton = document.createElement('button')
-    postButton.innerText = "Create Post"
-    postButton.addEventListener('click', () => {
-        // html of modal to post
-        document.getElementById('modal').style.display = 'block'
-        const postPopUp = document.getElementById('modal-text')
-
-        const writePost = document.createElement('div')
-        writePost.innerText = "Write Post: "
-        postPopUp.appendChild(writePost)
-
-        const postBox = document.createElement('textarea')
-        postBox.style.width = '90%'
-        postBox.style.height = '100px'
-        postPopUp.appendChild(postBox)
-
-        const image = document.createElement('span')
-        image.innerText = "Image Link: "
-        postPopUp.append(image)
-
-        const imageSource = document.createElement('input')
-        imageSource.type = 'file'
-        imageSource.accept = 'image/*'
-        postPopUp.append(imageSource)
-
-        const createPostButton = document.createElement('button')
-        createPostButton.style.display = 'block'
-        createPostButton.innerText = "Post"
-        postPopUp.appendChild(createPostButton)
-
-        const message = document.createElement('div')
-        postPopUp.appendChild(message)
-
-        // allow user to post
-        createPostButton.addEventListener('click', () => {
-            const postText = postBox.value
-            const file = document.querySelector('input[type="file"]').files[0];
-            const data = Promise.resolve(fileToDataUrl(file))
-            data.then(value => {
-                // replace metadata
-                let imageLink = ''
-                if (value.includes("image/jpeg")) 
-                    imageLink = value.replace("data:image/jpeg;base64,", "")
-                else if (value.includes("image/png"))
-                    imageLink = value.replace("data:image/png;base64,", "")
-                else if (value.includes("image/jpg"))
-                    imageLink = value.replace("data:image/jpg;base64,", "")
-
-                const postBody = {
-                    "description_text": postText,
-                    "src": imageLink
-                };
-                fetch('http://localhost:5000/post/', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Token ' + token 
-                    },
-                    body: JSON.stringify(postBody),
-                })
-                .then (response => {
-                    if (response.status === 200) {
-                        message.innerText = "Post created successfully!"
-                    }
-                    else if (response.status === 400) {
-                        message.innerText = "Malformed Request: Image could not be processed"
-                    }
-                    else if (response.status === 403) {
-                        message.innerText = "Invalid Auth Token"
-                    }
-                })
-                .catch(error => {
-                    console.log('Error: ', error);
-                })
-            })
-
-        })
-    })
-    return postButton
-}
-
-
-/////// helper functions ///////
-
-// list popup on modal
-function displayListHead (innerText) {
-    const List = document.createElement('ul');
-    List.innerText = innerText;
-    document.getElementById('modal-text').innerText = ""
-    document.getElementById('modal-text').appendChild(List);
-    return List;
-}
-
-function postErrors(status) {
-    const popup = document.getElementById('modal');
-    const popupText = document.getElementById('modal-text');
-
-    if (status === 400) {
-        popup.style.display = 'block'
-        popupText.innerText = "Malformed Request"
-    }
-    else if (status === 403) {
-        popup.style.display = 'block'
-        popupText.innerText = "Invalid Auth Token"
-    }
-    else if (status === 404) {
-        popup.style.display = 'block'
-        popupText.innerText = "Post Not Found"
-    }
-}
-
-function userErrors(status) {
-    const popup = document.getElementById('modal');
-    const popupText = document.getElementById('modal-text');
-
-    if (status === 400) {
-        popup.style.display = 'block'
-        popupText.innerText = "Malformed Request"
-    }
-    else if (status === 403) {
-        popup.style.display = 'block'
-        popupText.innerText = "Invalid Auth Token"
-    }
-    else if (status === 404) {
-        popup.style.display = 'block'
-        popupText.innerText = "User Not Found"
-    }
-}
-
-function likeOrUnlike (request, id, token) {
-    fetch(`http://localhost:5000/post/${request}?id=${id}`, {
-        method: 'PUT',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': 'Token ' + token
-        }
-    }).then(response => {
-        if (response.status != 200) {
-            postErrors(response.status)
-        }
-    }).catch(error => {
-        console.log('Error: ', error)
-    })
 }
 
 // show posts used for feed and profile posts
@@ -842,8 +654,9 @@ function showPosts(post, token) {
 
     // button of 'comments'
     const commentsButton = document.createElement('button');
+    var clicked = false
     commentsButton.addEventListener('click', () => {
-        document.getElementById('modal').style.display = 'block'
+        //document.getElementById('modal').style.display = 'block'
         // Comment list
         const commentList = displayListHead ("Comments: ");
 
@@ -862,9 +675,11 @@ function showPosts(post, token) {
                 document.getElementById('modal').style.display = 'none'
             })
             fullComment.appendChild(comment)
-
-            commentList.appendChild(fullComment)
+            if (clicked === false) {
+                feedPost.appendChild(fullComment)
+            }
         })
+        clicked = true
     });
     const numComments = post.comments.length;
     if (numComments === 1) {
@@ -948,9 +763,206 @@ function showPosts(post, token) {
         .catch(error => {
             console.log('Error: ', error);
         })
+        pageReset()
     })
     
     // add to feed       
     const feed = document.getElementById('feed');
     feed.appendChild(feedPost);
 }
+
+function createPost (token) {
+    const postButton = document.createElement('button')
+    postButton.innerText = "Create Post"
+    postButton.addEventListener('click', () => {
+        // html of modal to post
+        document.getElementById('modal').style.display = 'block'
+        const postPopUp = document.getElementById('modal-text')
+
+        const writePost = document.createElement('div')
+        writePost.innerText = "Write Post: "
+        postPopUp.appendChild(writePost)
+
+        const postBox = document.createElement('textarea')
+        postBox.style.width = '90%'
+        postBox.style.height = '100px'
+        postPopUp.appendChild(postBox)
+
+        const image = document.createElement('span')
+        image.innerText = "Image Link: "
+        postPopUp.append(image)
+
+        const imageSource = document.createElement('input')
+        imageSource.type = 'file'
+        imageSource.accept = 'image/*'
+        postPopUp.append(imageSource)
+
+        const createPostButton = document.createElement('button')
+        createPostButton.style.display = 'block'
+        createPostButton.innerText = "Post"
+        postPopUp.appendChild(createPostButton)
+
+        const message = document.createElement('div')
+        postPopUp.appendChild(message)
+
+        // allow user to post
+        createPostButton.addEventListener('click', () => {
+            const postText = postBox.value
+            const file = document.querySelector('input[type="file"]').files[0];
+            const data = Promise.resolve(fileToDataUrl(file))
+            data.then(value => {
+                // replace metadata
+                let imageLink = ''
+                if (value.includes("image/jpeg")) 
+                    imageLink = value.replace("data:image/jpeg;base64,", "")
+                else if (value.includes("image/png"))
+                    imageLink = value.replace("data:image/png;base64,", "")
+                else if (value.includes("image/jpg"))
+                    imageLink = value.replace("data:image/jpg;base64,", "")
+
+                const postBody = {
+                    "description_text": postText,
+                    "src": imageLink
+                };
+                fetch('http://localhost:5000/post/', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Token ' + token 
+                    },
+                    body: JSON.stringify(postBody),
+                })
+                .then (response => {
+                    if (response.status === 200) {
+                        message.innerText = "Post created successfully!"
+                    }
+                    else if (response.status === 400) {
+                        message.innerText = "Malformed Request: Image could not be processed"
+                    }
+                    else if (response.status === 403) {
+                        message.innerText = "Invalid Auth Token"
+                    }
+                })
+                .catch(error => {
+                    console.log('Error: ', error);
+                })
+            })
+
+        })
+    })
+    return postButton
+}
+
+////////////////////////////////
+/////// helper functions ///////
+////////////////////////////////
+
+// depending on if user is following or not, will follow or unfollow
+function FollowOrUnfollow (token, request, username) {
+    fetch(`http://localhost:5000/user/${request}?username=${username}`, {
+        method: 'PUT',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + token 
+        },
+    })
+    .then(response => {
+        if (status != 200) userErrors(response.status)
+    })
+    .catch(error => {
+        console.log('Error: ', error);
+    })
+}
+
+function UserDetailsList(userData) {
+    // usernames profile - list head
+    const listHead = document.createElement('ul')
+    listHead.innerText = `${userData.username}'s Profile Details:`
+
+    // name
+    const name = document.createElement('li')
+    name.innerText = `Name: ${userData.name}`
+    listHead.appendChild(name)
+
+    // id
+    const id = document.createElement('li')
+    id.innerText = `User ID: ${userData.id}`
+    listHead.appendChild(id)
+
+    // email
+    const email = document.createElement('li')
+    email.innerText = `Email: ${userData.email}`
+    listHead.appendChild(email)
+
+    // followers + following count 
+    const FollowersAndFollowing = document.createElement('li')
+    FollowersAndFollowing.innerText = `Followers: ${userData.followed_num}, Following: ${userData.following.length}`
+    listHead.appendChild(FollowersAndFollowing)
+
+    return listHead
+}
+
+// list popup on modal
+function displayListHead (innerText) {
+    const List = document.createElement('ul');
+    List.innerText = innerText;
+    document.getElementById('modal-text').innerText = ""
+    document.getElementById('modal-text').appendChild(List);
+    return List;
+}
+
+function postErrors(status) {
+    const popup = document.getElementById('modal');
+    const popupText = document.getElementById('modal-text');
+
+    if (status === 400) {
+        popup.style.display = 'block'
+        popupText.innerText = "Malformed Request"
+    }
+    else if (status === 403) {
+        popup.style.display = 'block'
+        popupText.innerText = "Invalid Auth Token"
+    }
+    else if (status === 404) {
+        popup.style.display = 'block'
+        popupText.innerText = "Post Not Found"
+    }
+}
+
+function userErrors(status) {
+    const popup = document.getElementById('modal');
+    const popupText = document.getElementById('modal-text');
+
+    if (status === 400) {
+        popup.style.display = 'block'
+        popupText.innerText = "Malformed Request"
+    }
+    else if (status === 403) {
+        popup.style.display = 'block'
+        popupText.innerText = "Invalid Auth Token"
+    }
+    else if (status === 404) {
+        popup.style.display = 'block'
+        popupText.innerText = "User Not Found"
+    }
+}
+
+function likeOrUnlike (request, id, token) {
+    fetch(`http://localhost:5000/post/${request}?id=${id}`, {
+        method: 'PUT',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + token
+        }
+    }).then(response => {
+        if (response.status != 200) {
+            postErrors(response.status)
+        }
+    }).catch(error => {
+        console.log('Error: ', error)
+    })
+}
+
